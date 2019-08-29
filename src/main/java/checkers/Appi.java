@@ -21,7 +21,7 @@ public class Appi extends Application {
         Scene scene = new Scene(design.getGridPane(), 751, 650, Color.BLUE);
         scene.setOnMouseClicked(event -> board.readMouseEvent(event));
         primaryStage.setTitle("CheckersFX");
-        primaryStage.getIcons().add(new Image("pawns/Red_PAWN.png"));
+        primaryStage.getIcons().add(new Image("red_pawn.png"));
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
         primaryStage.show();

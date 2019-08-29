@@ -21,12 +21,12 @@ public class PawnClass {
     }
 
     public ImageView getImage() {
-        Image image = new Image("pawns/" + color + "_" + pawn + ".png");
+        Image image = new Image(  color + "_" + pawn + ".png");
         return new ImageView(image);
     }
 
     public ImageView getLightImage() {
-        Image image = new Image("pawns/light_" + color + "_" + pawn + ".png");
+        Image image = new Image( "light_"+ color + "_" + pawn + ".png");
         return new ImageView(image);
     }
 
