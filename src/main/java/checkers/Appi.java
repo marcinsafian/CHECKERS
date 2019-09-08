@@ -18,7 +18,7 @@ public class Appi extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        Scene scene = new Scene(design.getGridPane(), 751, 650, Color.BLUE);
+        Scene scene = new Scene(BoardLogic.getGridPane(), 751, 650, Color.STEELBLUE);
         scene.setOnMouseClicked(event -> board.readMouseEvent(event));
         primaryStage.setTitle("CheckersFX");
         primaryStage.getIcons().add(new Image("red_pawn.png"));

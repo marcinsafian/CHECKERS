@@ -9,4 +9,9 @@ public enum PawnColor {
     public boolean isRed(){
         return this==RED;
     }
+
+    @Override
+    public String toString() {
+        return super.toString().toLowerCase();
+    }
 }

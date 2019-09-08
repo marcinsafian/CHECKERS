@@ -9,4 +9,9 @@ public enum Pawn {
     public boolean isQueen(){
         return this==QUEEN;
     }
+
+    @Override
+    public String toString() {
+        return super.toString().toLowerCase();
+    }
 }

@@ -6,11 +6,14 @@ import checkers.pawn.Pawn;
 import checkers.pawn.PawnClass;
 import checkers.pawn.PawnColor;
 import checkers.pawn.PawnMove;
+import javafx.concurrent.Task;
 import javafx.scene.input.MouseEvent;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import static java.lang.Thread.sleep;
 
 
 public class Board {
@@ -23,10 +26,7 @@ public class Board {
     private Set<Coordinates> canGo = new HashSet<>();
     private Set<Coordinates> canForce = new HashSet<>();
     private Set<Coordinates> possibleTake = new HashSet<>();
-
-    private boolean endGame = false;
     private boolean aiRound = false;
-
     private AiLogic computer = new AiLogic();
 
     public Board() {
@@ -64,37 +64,35 @@ public class Board {
         board.put(new Coordinates(4, 7), new PawnClass(Pawn.PAWN, PawnColor.WHITE));
         board.put(new Coordinates(6, 7), new PawnClass(Pawn.PAWN, PawnColor.WHITE));
 
-        for(Map.Entry<Coordinates, PawnClass> entry : board.entrySet()) {
+        for (Map.Entry<Coordinates, PawnClass> entry : board.entrySet()) {
             BoardLogic.addPawn(entry.getKey(), entry.getValue());
         }
     }
 
     public void readMouseEvent(MouseEvent event) {
-        if(aiRound) {
+        if (aiRound) {
             return;
         }
 
-        Coordinates eventCoordinates = new Coordinates((int) ((event.getX()-5) / 85), (int) ((event.getY()-5) / 85));
+        Coordinates eventCoordinates = new Coordinates((int) ((event.getX() - 5) / 85), (int) ((event.getY() - 5) / 85));
 
-        if(isMark) {
-            if(markCoordinates.equals(eventCoordinates) && !newForce) {
+        if (isMark) {
+            if (markCoordinates.equals(eventCoordinates) && !newForce) {
                 notShowMark(markCoordinates);
 
                 markCoordinates = null;
                 isMark = false;
-            } else if(canGo.contains(eventCoordinates)) {
-
+            } else if (canGo.contains(eventCoordinates)) {
                 notShowMark(markCoordinates);
                 movePawn(markCoordinates, eventCoordinates);
                 markCoordinates = null;
                 isMark = false;
 
                 aiMove();
-            } else if(canForce.contains(eventCoordinates) && !isEmpty(eventCoordinates)) {
-
+            } else if (canForce.contains(eventCoordinates) && !isEmpty(eventCoordinates)) {
                 notShowMark(markCoordinates);
 
-                if(!forcePawn(markCoordinates, eventCoordinates)) {
+                if (!forcePawn(markCoordinates, eventCoordinates)) {
                     isMark = false;
                     newForce = false;
                     aiMove();
@@ -103,9 +101,9 @@ public class Board {
                     markCoordinates = eventCoordinates;
                 }
             }
-        } else if(eventCoordinates.isCorrect()) {
-            if(isEmpty(eventCoordinates)) {
-                if(getPawn(eventCoordinates).getColor().isWhite() && isPawn(eventCoordinates, PawnColor.WHITE)) {
+        } else if (eventCoordinates.isCorrect()) {
+            if (isEmpty(eventCoordinates)) {
+                if (getPawn(eventCoordinates).getColor().isWhite() && isPawn(eventCoordinates, PawnColor.WHITE)) {
                     isMark = true;
                     markCoordinates = eventCoordinates;
                     showMark(eventCoordinates);
@@ -115,41 +113,73 @@ public class Board {
     }
 
     private void aiMove() {
+        finish();
+
+        Task<Void> computerSleep = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                try {
+                    sleep(1000);
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                }
+                return null;
+            }
+        };
+
+        computerSleep.setOnSucceeded(event -> {
+            Coordinates moveCoordinates = computer.chooseMove(markCoordinates);
+            notShowMark(markCoordinates);
+
+            if (computer.beForceGo()) {
+                if (!forcePawn(markCoordinates, moveCoordinates)) {
+                    newForce = false;
+                    aiRound = false;
+                    markCoordinates = null;
+                } else {
+                    newForce = true;
+                    markCoordinates = moveCoordinates;
+                    aiMove();
+                }
+            } else {
+                movePawn(markCoordinates, moveCoordinates);
+                aiRound = false;
+                markCoordinates = null;
+            }
+        });
 
         aiRound = true;
         computer.getData();
 
-        if(!newForce) {
+        if (!newForce) {
             markCoordinates = computer.choosePawn();
         }
 
         showMark(markCoordinates);
+
+        new Thread(computerSleep).start();
     }
 
     private boolean isPawn(Coordinates coordinates, PawnColor color) {
         Set<Coordinates> bePawn = new HashSet<>();
 
-        for(Map.Entry<Coordinates, PawnClass> entry : board.entrySet()) {
-            if(entry.getValue().getColor() == color) {
+        for (Map.Entry<Coordinates, PawnClass> entry : board.entrySet()) {
+            if (entry.getValue().getColor() == color) {
                 PawnMove pawnMoves = new PawnMove(entry.getKey(), entry.getValue());
 
-                if(pawnMoves.getCanForce().size() > 0) {
+                if (pawnMoves.getCanForce().size() > 0) {
                     bePawn.add(entry.getKey());
                 }
             }
         }
 
-        if(bePawn.size() == 0 || bePawn.contains(coordinates)) {
-            return true;
-        }
-
-        return false;
+        return bePawn.size() == 0 || bePawn.contains(coordinates);
     }
 
     private void movePawn(Coordinates oldCoordinates, Coordinates newCoordinates) {
         PawnClass pawn = getPawn(oldCoordinates);
 
-        if(possibleTake.contains(newCoordinates)) {
+        if (possibleTake.contains(newCoordinates)) {
             pawn = new PawnClass(Pawn.QUEEN, pawn.getColor());
         }
 
@@ -164,7 +194,7 @@ public class Board {
     private boolean forcePawn(Coordinates oldCoordinates, Coordinates newCoordinates) {
         PawnClass pawn = getPawn(oldCoordinates);
 
-        if(possibleTake.contains(newCoordinates)) {
+        if (possibleTake.contains(newCoordinates)) {
             pawn = new PawnClass(Pawn.QUEEN, pawn.getColor());
         }
 
@@ -180,7 +210,7 @@ public class Board {
 
         PawnMove pawnMove = new PawnMove(newCoordinates, pawn);
 
-        if(pawnMove.getCanForce().size() > 0) {
+        if (pawnMove.getCanForce().size() > 0) {
             showNewForce(newCoordinates);
             return true;
         }
@@ -191,25 +221,25 @@ public class Board {
     private Coordinates getVs(Coordinates coordinates) {
         Coordinates checkUpLeft = new Coordinates(coordinates.getX() - 1, coordinates.getY() - 1);
 
-        if(canForce.contains(checkUpLeft)) {
+        if (canForce.contains(checkUpLeft)) {
             return checkUpLeft;
         }
 
         Coordinates checkUpRight = new Coordinates(coordinates.getX() + 1, coordinates.getY() - 1);
 
-        if(canForce.contains(checkUpRight)) {
+        if (canForce.contains(checkUpRight)) {
             return checkUpRight;
         }
 
         Coordinates checkBottomLeft = new Coordinates(coordinates.getX() - 1, coordinates.getY() + 1);
 
-        if(canForce.contains(checkBottomLeft)) {
+        if (canForce.contains(checkBottomLeft)) {
             return checkBottomLeft;
         }
 
         Coordinates checkBottomRight = new Coordinates(coordinates.getX() + 1, coordinates.getY() + 1);
 
-        if(canForce.contains(checkBottomRight)) {
+        if (canForce.contains(checkBottomRight)) {
             return checkBottomRight;
         }
 
@@ -223,7 +253,7 @@ public class Board {
         canForce = pawnMove.getCanForce();
         possibleTake = pawnMove.getPossibleTake();
 
-        if(canForce.size() > 0) {
+        if (canForce.size() > 0) {
             canGo.clear();
         }
 
@@ -275,7 +305,7 @@ public class Board {
     private void notShowForce(Coordinates coordinates) {
         PawnClass pawn = getPawn(coordinates);
 
-        if(pawn != null) {
+        if (pawn != null) {
             notShowPawn(coordinates);
         } else {
             notShowGo(coordinates);
@@ -292,5 +322,26 @@ public class Board {
 
     public static PawnClass getPawn(Coordinates coordinates) {
         return board.get(coordinates);
+    }
+
+    public void finish() {
+        Set<Coordinates> possibleMovesWhite = new HashSet<>();
+        Set<Coordinates> possibleMovesBlack = new HashSet<>();
+        int pawnWhiteCount = 0;
+        int pawnRedCount = 0;
+
+        for (Map.Entry<Coordinates, PawnClass> entry : board.entrySet()) {
+            PawnMove moves = new PawnMove(entry.getKey(), entry.getValue());
+
+            if (entry.getValue().getColor().isRed()) {
+                pawnRedCount++;
+                possibleMovesBlack.addAll(moves.getCanForce());
+                possibleMovesBlack.addAll(moves.getCanGo());
+            } else {
+                pawnWhiteCount++;
+                possibleMovesWhite.addAll(moves.getCanForce());
+                possibleMovesWhite.addAll(moves.getCanGo());
+            }
+        }
     }
 }

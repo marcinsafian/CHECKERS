@@ -114,9 +114,7 @@ public class PawnMove {
             } else if(checkMove) {
                 canGo.add(coordinates);
 
-                if(pawn.getPawn().isQueen()) {
-                    return true;
-                }
+                return pawn.getPawn().isQueen();
             }
         }
 
